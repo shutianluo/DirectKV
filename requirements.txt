@@ -1,0 +1,6 @@
+# Python dependencies for DirectKV
+torch>=2.1.0
+sglang[all]==0.4.9.post6
+transformers>=4.40.0
+pybind11>=2.11.0
+numpy
