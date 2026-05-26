@@ -20,6 +20,12 @@ Shutian Luo, Haiying Sheng
 }
 ```
 
+## Artifact
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20385630.svg)](https://doi.org/10.5281/zenodo.20385630)
+
+The archived artifact is available on Zenodo: <https://doi.org/10.5281/zenodo.20385630>
+
 ## License
 
 This artifact is released under the [MIT License](LICENSE).
