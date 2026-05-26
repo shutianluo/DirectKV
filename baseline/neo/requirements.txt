@@ -1,0 +1,7 @@
+fastapi>=0.111
+ray[default]>=2.21
+safetensors>=0.4.3
+transformers>=4.40
+uvicorn>=0.29
+vllm_flash_attn>=2.6.1
+matplotlib

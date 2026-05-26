@@ -118,10 +118,23 @@ def _register_via_registry(reg_mod):
             sa = runner.server_args
             if not sa.disable_radix_cache:
                 raise ValueError("directkv requires --disable-radix-cache")
+            if not sa.disable_cuda_graph:
+                raise ValueError("directkv requires --disable-cuda-graph")
             if getattr(runner, "use_mla_backend", False):
                 raise ValueError("directkv does not support MLA models")
             from sglang.srt.layers.attention.directkv_backend import DirectKVBackend
             return DirectKVBackend(runner)
+
+    if "directkv-smpv2" not in ATTENTION_BACKENDS:
+        @register_attention_backend("directkv-smpv2")
+        def _create_directkv_smpv2_backend(runner):
+            sa = runner.server_args
+            if not sa.disable_radix_cache:
+                raise ValueError("directkv-smpv2 requires --disable-radix-cache")
+            if getattr(runner, "use_mla_backend", False):
+                raise ValueError("directkv-smpv2 does not support MLA models")
+            from sglang.srt.layers.attention.directkv_smpv2_backend import DirectKVSmpV2Backend
+            return DirectKVSmpV2Backend(runner)
 
     # Also add to ATTENTION_BACKEND_CHOICES for argparse
     try:
@@ -130,6 +143,8 @@ def _register_via_registry(reg_mod):
         if choices is not None:
             if "directkv" not in choices:
                 choices.append("directkv")
+            if "directkv-smpv2" not in choices:
+                choices.append("directkv-smpv2")
     except ImportError:
         pass
 
@@ -142,7 +157,7 @@ def _register_via_registry(reg_mod):
 
             def _patched(self, *args, **kwargs):
                 backend = getattr(self.server_args, "attention_backend", None)
-                if backend == "directkv":
+                if backend in ("directkv", "directkv-smpv2"):
                     _init_directkv_pools(self)
                 else:
                     _orig(self, *args, **kwargs)
@@ -168,16 +183,34 @@ def _register_via_model_runner(mr_mod):
                 sa = self.server_args
                 if not sa.disable_radix_cache:
                     raise ValueError(
-                        "directkv requires --disable-radix-cache."
+                        "directkv requires --disable-radix-cache. "
+                        "Add this flag when launching the server."
+                    )
+                if not sa.disable_cuda_graph:
+                    raise ValueError(
+                        "directkv requires --disable-cuda-graph. "
+                        "Add this flag when launching the server."
                     )
                 if getattr(self, "use_mla_backend", False):
                     raise ValueError("directkv does not support MLA models.")
                 from sglang.srt.layers.attention.directkv_backend import DirectKVBackend
                 import logging
-                logging.getLogger(__name__).info(
-                    "Using DirectKV backend (Track B — fused projection)"
-                )
+                logging.getLogger(__name__).info("Using DirectKV attention backend (CPU-pinned KV cache)")
                 return DirectKVBackend(self)
+            if backend_str == "directkv-smpv2":
+                sa = self.server_args
+                if not sa.disable_radix_cache:
+                    raise ValueError(
+                        "directkv-smpv2 requires --disable-radix-cache."
+                    )
+                if getattr(self, "use_mla_backend", False):
+                    raise ValueError("directkv-smpv2 does not support MLA models.")
+                from sglang.srt.layers.attention.directkv_smpv2_backend import DirectKVSmpV2Backend
+                import logging
+                logging.getLogger(__name__).info(
+                    "Using DirectKV-SMPv2 backend (Track B — fused projection)"
+                )
+                return DirectKVSmpV2Backend(self)
             return orig_get(self, backend_str)
 
         _patched_get_backend._directkv_patched = True
@@ -189,7 +222,7 @@ def _register_via_model_runner(mr_mod):
         def _patched_init_pool(self, total_gpu_memory, max_num_reqs=None, max_total_tokens=None):
             orig_init_pool(self, total_gpu_memory, max_num_reqs, max_total_tokens)
             backend = getattr(self.server_args, "attention_backend", None)
-            if backend == "directkv":
+            if backend in ("directkv", "directkv-smpv2"):
                 _replace_pool_with_directkv(self)
 
         _patched_init_pool._directkv_patched = True
