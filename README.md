@@ -42,7 +42,7 @@ The paper's performance target is the **NVIDIA GH200 Grace-Hopper Superchip**, w
 | SGLang integration / E2E functionality | ✓ | ✓ |
 | Paper performance numbers | ✓ Full | PCIe bandwidth is ~18× lower |
 
-> **You do not need a GH200 to evaluate correctness.** Any Hopper GPU (SM90) can run all unit tests and verify the SGLang integration. Neo's pre-built CPU kernel (`pacpu`) targets **aarch64**; pass `--skip-neo` on x86 machines.
+> **You do not need a GH200 to evaluate correctness.** Any Hopper GPU (SM90) can run all unit tests and verify the SGLang integration.
 
 ---
 
@@ -53,6 +53,34 @@ This section is the complete, self-contained guide for reproducing **Figure 10**
 latency vs. sequence length).
 
 > **Estimated runtime**: ~25 min (`--quick` mode) / ~2.5 hours (full run)
+
+### Environment: prebuilt container (recommended) or build from scratch
+
+This guide needs the DirectKV environment (SGLang + DirectKV, Pie, Neo, FlexGen, CUTLASS,
+the CUDA toolchain). You can obtain it in two ways; **everything afterward — Steps 5–9 —
+is identical either way.** Steps 1–4 below set the environment up by hand; the container
+ships it pre-built.
+
+**Option A — Prebuilt container (recommended).** Pull the image matching your hardware
+architecture and open a shell inside it; Steps 1–4 are already done, so skip straight to
+Step 5. The code in the image is exactly this repository — DirectKV and all baselines are
+installed from `install.sh` and the `baseline/` tree, with no hidden or divergent code.
+
+| Hardware | Arch | Image |
+|----------|------|-------|
+| **GH200** Grace-Hopper (NVLink-C2C) — *paper performance target* | `aarch64` | `shutianluo93/directkv:osdi26-ae-arm` |
+| **H100 / H200** or other Hopper x86 hosts (PCIe) | `x86_64` | `shutianluo93/directkv:osdi26-ae-x86` |
+
+```bash
+IMG=shutianluo93/directkv:osdi26-ae-x86      # or :osdi26-ae-arm on a GH200
+docker pull $IMG
+docker run --rm -it --gpus all $IMG /bin/bash
+export WORKSPACE=$(pwd)
+# inside the container:  cd /workspace/DirectKV   →  then continue at Step 5 / Step 6
+```
+
+**Option B — Build from scratch.** Follow **Steps 0–4** below to create the `ae_python`
+venv and install everything yourself, then continue with Step 5.
 
 ### What is reproduced
 

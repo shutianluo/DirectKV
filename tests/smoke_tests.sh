@@ -343,6 +343,7 @@ python -m sglang.launch_server \
   --disable-radix-cache \
   --cuda-graph-max-bs 64 \
   --max-running-requests 64 \
+  $CUDA_GRAPH_FLAG $WARMUP_FLAG \
   > "$SMOKE_LOG/server_directkv.log" 2>&1 &
 SRV_PID=$!
 

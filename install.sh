@@ -122,15 +122,24 @@ if [ -f "$TORCHAO_UTILS" ]; then
 import pathlib, sys
 p = pathlib.Path(sys.argv[1])
 txt = p.read_text()
-marker = '# Lazy import to suppress some warnings'
-guard = '    if not torchao_config:\n        return model\n    '
+# Insert the early-return guard immediately before the marker comment, matching
+# the marker line's OWN indentation. (The previous version hard-coded 4-space
+# indent and broke when the marker was itself indented, producing an
+# IndentationError that only surfaced on the server import path.)
 if 'if not torchao_config:' not in txt:
-    txt2 = txt.replace(marker, guard + marker, 1)
-    if txt2 == txt:
-        print(f"  WARN: could not find insertion point in {p}")
-    else:
-        p.write_text(txt2)
+    out, inserted = [], False
+    for line in txt.splitlines(keepends=True):
+        if (not inserted) and 'Lazy import to suppress some warnings' in line:
+            indent = line[:len(line) - len(line.lstrip())]
+            out.append(f"{indent}if not torchao_config:\n")
+            out.append(f"{indent}    return model\n")
+            inserted = True
+        out.append(line)
+    if inserted:
+        p.write_text(''.join(out))
         print("  torchao_utils.py patched: early-return guard added")
+    else:
+        print(f"  WARN: could not find insertion point in {p}")
 else:
     print("  torchao_utils.py already patched")
 PYEOF

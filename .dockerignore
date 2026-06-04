@@ -1,0 +1,19 @@
+# Build artifacts and large/host-specific dirs — keep the build context small.
+ae_python/
+cutlass/
+weights
+weights/
+results/
+smoke_out/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.git/
+tests/test_directkv_cpu_kv
+baseline/neo/profile_results/
+# Host-built Neo artifacts — rebuilt fresh inside the image
+baseline/neo/csrc/build/
+baseline/neo/pacpu/build/
+baseline/neo/pacpu/prebuilt/aarch64_backup/
+*.log
